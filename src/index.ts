@@ -1,42 +1,65 @@
+import express from "express";
 import "dotenv/config";
 import { drizzle } from "drizzle-orm/neon-http";
 import { eq } from "drizzle-orm";
-import { products } from "./db/schema";
+import { productsTable } from "./db/schema.ts";
+
+const app = express();
+app.use(express.json());
 
 const db = drizzle(process.env.DATABASE_URL!);
 
-async function main() {
-  const product: typeof products.$inferInsert = {
-    name: "Tomato",
-    sku: "roma-tomato",
-    quantity: 54,
-    price: 199,
-  };
+// Create product
+app.post("/api/products", async (req, res) => {
+  try {
+    // const product: typeof productsTable.$inferInsert = req.body;
+    const product: typeof productsTable.$inferInsert = {
+      name: "milk",
+      sku: "whole-milk",
+      quantity: 2,
+      price: 699,
+    };
+    await db.insert(productsTable).values(product);
+    res.status(201).json({ message: "Product created successfully" });
+  } catch (error) {
+    res.status(500).json({ error: "Failed to create product" });
+  }
+});
 
-  await db.insert(products).values(product);
-  console.log("New product created!");
+// Read all products
+app.get("/api/products", async (req, res) => {
+  try {
+    const products = await db.select().from(productsTable);
+    res.json(products);
+  } catch (error) {
+    res.status(500).json({ error: "Failed to fetch products" });
+  }
+});
 
-  const products_result = await db.select().from(products);
-  console.log("Getting all products from the database: ", products_result);
-  /*
-  const users: {
-    id: number;
-    name: string;
-    age: number;
-    email: string;
-  }[]
-  */
+// // Update product by id
+// app.put('/api/products/:id', async (req, res) => {
+//   try {
+//     const id = req.params.id;
+//     const updates = req.body;
+//     await db.update(productsTable).set(updates).where(eq(productsTable.id, id));
+//     res.json({ message: 'Product updated successfully' });
+//   } catch (error) {
+//     res.status(500).json({ error: 'Failed to update product' });
+//   }
+// });
 
-  //   await db
-  //     .update(products)
-  //     .set({
-  //       age: 31,
-  //     })
-  //     .where(eq(usersTable.email, user.email));
-  //   console.log('User info updated!')
+// // Delete product by id
+// app.delete('/api/products/:id', async (req, res) => {
+//   try {
+//     const id = req.params.id;
+//     await db.delete(productsTable).where(eq(productsTable.id, id));
+//     res.json({ message: 'Product deleted successfully' });
+//   } catch (error) {
+//     res.status(500).json({ error: 'Failed to delete product' });
+//   }
+// });
 
-  //   await db.delete(usersTable).where(eq(usersTable.email, user.email));
-  //   console.log('User deleted!')
-}
-
-main();
+const PORT = process.env.PORT || 3001;
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
+});
