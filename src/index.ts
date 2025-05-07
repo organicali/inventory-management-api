@@ -44,15 +44,51 @@ app.get("/api/products", async (req, res) => {
   }
 });
 
+// Read one product
+app.get("/api/products/:id", async (req, res) => {
+  try {
+    const id = parseInt(req.params.id);
+    const product = await db
+      .select()
+      .from(productsTable)
+      .where(eq(productsTable.id, id))
+      .limit(1);
+    res.json(product[0]);
+  } catch (error) {
+    console.error("Error fetching product: ", error);
+    res.status(500).json({ error: "Failed to fetch requested product" });
+  }
+});
+
 // Update product by id
 app.put("/api/products/:id", async (req, res) => {
   try {
     const id = parseInt(req.params.id);
+    console.log(`Updating product with id: ${id}`);
     const updates = req.body;
-    await db.update(productsTable).set(updates).where(eq(productsTable.id, id));
-    res.json({ message: "Product updated successfully" });
+    console.log(`Update data:`, updates);
+
+    // Remove id and created_at from updates to prevent updating these fields
+    const { id: _, created_at: __, ...updateData } = updates;
+
+    const result = await db
+      .update(productsTable)
+      .set(updateData)
+      .where(eq(productsTable.id, id))
+      .returning();
+
+    if (result.length === 0) {
+      res.status(404).json({ error: "Product not found" });
+    }
+
+    console.log(`Successfully updated product:`, result[0]);
+    res.json(result[0]);
   } catch (error) {
-    res.status(500).json({ error: "Failed to update product" });
+    console.error("Error updating product:", error);
+    res.status(500).json({
+      error: "Failed to update product",
+      details: error instanceof Error ? error.message : "Unknown error",
+    });
   }
 });
 
