@@ -4,6 +4,7 @@ import { drizzle } from "drizzle-orm/neon-http";
 import { eq } from "drizzle-orm";
 import { productsTable } from "./db/schema.ts";
 import cors from "cors";
+import serverless from "serverless-http";
 
 const app = express();
 app.use(express.json());
@@ -107,3 +108,5 @@ const PORT = process.env.PORT || 3001;
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
+
+module.exports.handler = serverless(app);
