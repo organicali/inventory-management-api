@@ -1,10 +1,12 @@
-import express from "express";
+import express, { Router } from "express";
 import "dotenv/config";
 import { drizzle } from "drizzle-orm/neon-http";
 import { eq } from "drizzle-orm";
 import { productsTable } from "../../src/db/schema";
 import cors from "cors";
 import serverless from "serverless-http";
+
+const router = Router();
 
 const app = express();
 app.use(express.json());
@@ -19,7 +21,7 @@ app.use(
 const db = drizzle(process.env.DATABASE_URL!);
 
 // Create product
-app.post("/api/products", async (req, res) => {
+router.post("/products", async (req, res) => {
   try {
     const product: typeof productsTable.$inferInsert = req.body;
     // const product: typeof productsTable.$inferInsert = {
@@ -36,7 +38,7 @@ app.post("/api/products", async (req, res) => {
 });
 
 // Read all products
-app.get("/api/products", async (req, res) => {
+router.get("/products", async (req, res) => {
   try {
     const products = await db.select().from(productsTable);
     res.json(products);
@@ -46,7 +48,7 @@ app.get("/api/products", async (req, res) => {
 });
 
 // Read one product
-app.get("/api/products/:id", async (req, res) => {
+router.get("/products/:id", async (req, res) => {
   try {
     const id = parseInt(req.params.id);
     const product = await db
@@ -62,7 +64,7 @@ app.get("/api/products/:id", async (req, res) => {
 });
 
 // Update product by id
-app.put("/api/products/:id", async (req, res) => {
+router.put("/products/:id", async (req, res) => {
   try {
     const id = parseInt(req.params.id);
     console.log(`Updating product with id: ${id}`);
@@ -94,7 +96,7 @@ app.put("/api/products/:id", async (req, res) => {
 });
 
 // Delete product by id
-app.delete("/api/products/:id", async (req, res) => {
+router.delete("/products/:id", async (req, res) => {
   try {
     const id = parseInt(req.params.id);
     await db.delete(productsTable).where(eq(productsTable.id, id));
@@ -104,9 +106,11 @@ app.delete("/api/products/:id", async (req, res) => {
   }
 });
 
-const PORT = process.env.PORT || 3001;
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
-});
+// const PORT = process.env.PORT || 3001;
+// app.listen(PORT, () => {
+//   console.log(`Server running on port ${PORT}`);
+// });
 
-module.exports.handler = serverless(app);
+app.use("/api/", router);
+
+export const handler = serverless(app);
